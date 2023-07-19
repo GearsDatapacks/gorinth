@@ -1,8 +1,16 @@
 package gorinth
 
+import "log"
+
 func (dep Dependency) GetVersion() Version {
 	if dep.VersionId == "" {
-		return GetProject(dep.ProjectId, "").GetLatestVersion()
+		project, err := GetProject(dep.ProjectId, "")
+		
+		if err != nil {
+			log.Fatal(err)
+		}
+		
+		return project.GetLatestVersion()
 	}
 
 	return GetVersion(dep.VersionId, "")

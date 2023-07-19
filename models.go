@@ -32,3 +32,22 @@ type Project struct {
 	Loaders []string `json:"loaders"`
 	Gallery []map[string]any `json:"gallery"`
 }
+
+type Version struct {
+	Name string `json:"name"`
+	VersionNumber string `json:"version_number"`
+	Changelog string `json:"changelog"`
+	Dependencies []map[string]string `json:"dependencies"`
+	GameVersions []string `json:"game_versions"`
+	VersionType string `json:"version_type"`
+	Loaders []string `json:"loaders"`
+	Featured bool `json:"featured"`
+	Status string `json:"status"`
+	RequestedStatus string `json:"requested_status"`
+	Id string `json:"id"`
+	ProjectId string `json:"project_id"`
+	AuthorId string `json:"author_id"`
+	DatePublished string `json:"date_published"`
+	Downloads int `json:"downloads"`
+	Files []map[string]any `json:"files"`
+}

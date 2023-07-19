@@ -26,8 +26,6 @@ func GetProject(id_or_slug string, auth string) Project {
 func (project Project) GetLatestVersion() Version {
 	versions := project.GetVersions()
 
-	fmt.Println(versions)
-
 	if len(versions) == 0 {
 		log.Fatalf("Project %q has no versions.", project.Title)
 	}

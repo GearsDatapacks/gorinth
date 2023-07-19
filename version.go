@@ -6,9 +6,9 @@ import (
 	"log"
 )
 
-func GetVersion(versionId string) Version {
+func GetVersion(versionId string, auth string) Version {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/version/%s", versionId)
-	result, statusCode := get(url)
+	result, statusCode := getFromAuth(url, auth)
 
 	if statusCode == 404 {
 		log.Fatalf("Version %q wasn't found or no authorization to see this project", versionId)

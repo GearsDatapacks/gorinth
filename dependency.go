@@ -5,5 +5,5 @@ func (dep Dependency) GetVersion() Version {
 		return GetProject(dep.ProjectId, "").GetLatestVersion()
 	}
 
-	return GetVersion(dep.VersionId)
+	return GetVersion(dep.VersionId, "")
 }

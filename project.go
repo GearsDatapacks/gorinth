@@ -9,7 +9,7 @@ import (
 // GetProject returns a Project Model of the project with a matching ID or slug with the one provided.
 func GetProject(id_or_slug string, auth string) Project {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", id_or_slug)
-	result, statusCode := get(url)
+	result, statusCode := getFromAuth(url, auth)
 
 	if statusCode == 404 {
 		log.Fatalf("Project %q wasn't found or no authorization to see this project", id_or_slug)
@@ -18,6 +18,8 @@ func GetProject(id_or_slug string, auth string) Project {
 	project := Project{}
 
 	json.Unmarshal(result, &project)
+
+	project.auth = auth
 
 	return project
 }
@@ -36,7 +38,7 @@ func (project Project) GetLatestVersion() Version {
 // Gets all versions of a project
 func (project Project) GetVersions() []Version {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version", project.Slug)
-	result, statusCode := get(url)
+	result, statusCode := getFromAuth(url, project.auth)
 
 	if statusCode == 404 {
 		log.Fatalf("Project %q wasn't found or no authorization to see this project", project.Slug)

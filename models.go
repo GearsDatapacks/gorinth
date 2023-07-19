@@ -20,24 +20,24 @@ type Project struct {
 	Color int `json:"color"`
 	Id string `json:"id"`
 	Team string `json:"team"`
-	ModeratorMessage map[string]any `json:"moderator_message"`
+	ModeratorMessage ModeratorMessage `json:"moderator_message"`
 	Published string `json:"published"`
 	Updated string `json:"updated"`
 	Approved string `json:"approved"`
 	Followers int `json:"followers"`
 	Status string `json:"status"`
-	License map[string]any `json:"license"`
+	License License `json:"license"`
 	Versions []string `json:"versions"`
 	GameVersions []string `json:"game_versions"`
 	Loaders []string `json:"loaders"`
-	Gallery []map[string]any `json:"gallery"`
+	Gallery []GalleryImage `json:"gallery"`
 }
 
 type Version struct {
 	Name string `json:"name"`
 	VersionNumber string `json:"version_number"`
 	Changelog string `json:"changelog"`
-	Dependencies []map[string]string `json:"dependencies"`
+	Dependencies []Dependency `json:"dependencies"`
 	GameVersions []string `json:"game_versions"`
 	VersionType string `json:"version_type"`
 	Loaders []string `json:"loaders"`
@@ -49,5 +49,5 @@ type Version struct {
 	AuthorId string `json:"author_id"`
 	DatePublished string `json:"date_published"`
 	Downloads int `json:"downloads"`
-	Files []map[string]any `json:"files"`
+	Files []File `json:"files"`
 }

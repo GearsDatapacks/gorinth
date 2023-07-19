@@ -24,17 +24,6 @@ func GetProject(id_or_slug string, auth string) Project {
 	return project
 }
 
-// Gets the most recently created version of a project
-func (project Project) GetLatestVersion() Version {
-	versions := project.GetVersions()
-
-	if len(versions) == 0 {
-		log.Fatalf("Project %q has no versions.", project.Title)
-	}
-
-	return versions[0]
-}
-
 // Gets all versions of a project
 func (project Project) GetVersions() []Version {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version", project.Slug)
@@ -48,4 +37,28 @@ func (project Project) GetVersions() []Version {
 	json.Unmarshal(result, &response)
 
 	return response
+}
+
+// Gets the most recently created version of a project
+func (project Project) GetLatestVersion() Version {
+	versions := project.GetVersions()
+
+	if len(versions) == 0 {
+		log.Fatalf("Project %q has no versions.", project.Title)
+	}
+
+	return versions[0]
+}
+
+func (project Project) GetSpecificVersion(versionNumber string) Version {
+	versions := project.GetVersions()
+
+	for _, version := range versions {
+		if version.VersionNumber == versionNumber {
+			return version
+		}
+	}
+
+	log.Fatalf("Cannot find version %s of project %q", versionNumber, project.Title)
+	return Version{}
 }

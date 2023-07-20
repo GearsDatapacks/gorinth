@@ -9,7 +9,7 @@ import (
 // GetProject returns a Project Model of the project with a matching ID or slug with the one provided.
 func GetProject(id_or_slug string, auth string) (Project, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", id_or_slug)
-	result, statusCode := getFromAuth(url, auth)
+	result, statusCode := get(url, authHeader(auth))
 
 	if statusCode == 404 {
 		return Project{}, fmt.Errorf("Project %q wasn't found or no authorization to see this project", id_or_slug)
@@ -27,7 +27,7 @@ func GetProject(id_or_slug string, auth string) (Project, error) {
 // Gets all versions of a project
 func (project Project) GetVersions() []Version {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version", project.Slug)
-	result, statusCode := getFromAuth(url, project.auth)
+	result, statusCode := get(url, authHeader(project.auth))
 
 	if statusCode == 404 {
 		log.Fatalf("Project %q wasn't found or no authorization to see this project", project.Slug)
@@ -62,4 +62,32 @@ func (project Project) GetSpecificVersion(versionNumber string) Version {
 
 	log.Fatalf("Cannot find version %s of project %q", versionNumber, project.Title)
 	return Version{}
+}
+
+func (project Project) Modify(modified Project, auth string) error {
+	overriddenValues := removeZeroValues(modified)
+
+	url := "https://api.modrinth.com/v2/project/" + project.Id
+	body, status := patch(url, overriddenValues, authHeader(auth))
+
+	if status == 204 {
+		return nil
+	}
+
+	if status == 404 {
+		return fmt.Errorf("Project %q wasn't found or no authorization to see this project", project.Slug)
+	}
+
+	if status == 401 {
+		responseSchema := struct {
+			Error       string
+			Description string
+		}{}
+
+		json.Unmarshal(body, &responseSchema)
+
+		return fmt.Errorf("%s: %s", responseSchema.Error, responseSchema.Description)
+	}
+
+	return fmt.Errorf("unexpected response, status code %d", status)
 }

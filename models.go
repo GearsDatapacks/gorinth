@@ -51,4 +51,5 @@ type Version struct {
 	DatePublished string `json:"date_published"`
 	Downloads int `json:"downloads"`
 	Files []File `json:"files"`
+	FileParts []string `json:"file_parts"`
 }

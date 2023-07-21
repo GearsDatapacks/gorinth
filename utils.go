@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
 )
 
 func authHeader(auth string) map[string]string {
@@ -68,6 +70,71 @@ func patch(url string, payload any, headers map[string]string) (body []byte, sta
 	return responseBody, response.StatusCode
 }
 
+func post(url string, payload any, headers map[string]string, parts map[string]io.Reader) (body []byte, status int) {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	requestBody := &bytes.Buffer{}
+	writer := multipart.NewWriter(requestBody)
+
+	w, err := writer.CreateFormField("data")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Write(data)
+
+	for key, reader := range parts {
+		var fileWriter io.Writer
+		if x, ok := reader.(io.Closer); ok {
+				defer x.Close()
+		}
+		if x, ok := reader.(*os.File); ok {
+			fileWriter, err = writer.CreateFormFile(key, x.Name())
+			if err != nil {
+					log.Fatal(err)
+			}
+		} else {
+			fileWriter, err = writer.CreateFormField(key);
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		if _, err = io.Copy(fileWriter, reader); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	writer.Close()
+
+	client := &http.Client{}
+	request, err := http.NewRequest(http.MethodPost, url, requestBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
+
+	response, err := client.Do(request)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer response.Body.Close()
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return responseBody, response.StatusCode
+}
+
 func toMap[T any](object T) map[string]any {
 	str, err := json.Marshal(object)
 
@@ -109,3 +176,53 @@ func removeZeroValues[T Project](object T) map[string]any {
 
 	return values
 }
+
+// func Upload(client *http.Client, url string, values map[string]io.Reader) (err error) {
+// 	// Prepare a form that you will submit to that URL.
+// 	var b bytes.Buffer
+// 	w := multipart.NewWriter(&b)
+// 	for key, r := range values {
+// 			var fw io.Writer
+// 			if x, ok := r.(io.Closer); ok {
+// 					defer x.Close()
+// 			}
+// 			// Add an image file
+// 			if x, ok := r.(*os.File); ok {
+// 					if fw, err = w.CreateFormFile(key, x.Name()); err != nil {
+// 							return
+// 					}
+// 			} else {
+// 					// Add other fields
+// 					if fw, err = w.CreateFormField(key); err != nil {
+// 							return
+// 					}
+// 			}
+// 			if _, err = io.Copy(fw, r); err != nil {
+// 					return err
+// 			}
+
+// 	}
+// 	// Don't forget to close the multipart writer.
+// 	// If you don't close it, your request will be missing the terminating boundary.
+// 	w.Close()
+
+// 	// Now that you have a form, you can submit it to your handler.
+// 	req, err := http.NewRequest("POST", url, &b)
+// 	if err != nil {
+// 			return
+// 	}
+// 	// Don't forget to set the content type, this will contain the boundary.
+// 	req.Header.Set("Content-Type", w.FormDataContentType())
+
+// 	// Submit the request
+// 	res, err := client.Do(req)
+// 	if err != nil {
+// 			return
+// 	}
+
+// 	// Check the response
+// 	if res.StatusCode != http.StatusOK {
+// 			err = fmt.Errorf("bad status: %s", res.Status)
+// 	}
+// 	return
+// }

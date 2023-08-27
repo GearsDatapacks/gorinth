@@ -89,15 +89,15 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 	for key, reader := range parts {
 		var fileWriter io.Writer
 		if x, ok := reader.(io.Closer); ok {
-				defer x.Close()
+			defer x.Close()
 		}
 		if x, ok := reader.(*os.File); ok {
 			fileWriter, err = writer.CreateFormFile(key, x.Name())
 			if err != nil {
-					log.Fatal(err)
+				log.Fatal(err)
 			}
 		} else {
-			fileWriter, err = writer.CreateFormField(key);
+			fileWriter, err = writer.CreateFormField(key)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -152,10 +152,7 @@ func toMap[T any](object T) map[string]any {
 	return result
 }
 
-func removeZeroValues[T Project](object T) map[string]any {
-	zeroValueStruct := T{}
-
-	zeroValues := toMap(zeroValueStruct)
+func removeNullValues[T Project](object T) map[string]any {
 	values := toMap(object)
 
 	for key, value := range values {
@@ -164,13 +161,9 @@ func removeZeroValues[T Project](object T) map[string]any {
 			continue
 		}
 
-		switch value.(type) {
-		case map[string]any:
-			continue
-		}
-
-		if value == zeroValues[key] {
+		if value == "" {
 			delete(values, key)
+			continue
 		}
 	}
 

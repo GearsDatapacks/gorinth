@@ -88,7 +88,6 @@ func (project Project) CreateVersion(version Version, auth string) error {
 
 	body, status := post("https://api.modrinth.com/v2/version", version, authHeader(auth), files)
 	if status == 200 {
-		fmt.Println("Success")
 		return nil
 	}
 
@@ -104,7 +103,7 @@ func (project Project) CreateVersion(version Version, auth string) error {
 }
 
 func (project Project) Modify(modified Project, auth string) error {
-	overriddenValues := removeZeroValues(modified)
+	overriddenValues := removeNullValues(modified)
 
 	url := "https://api.modrinth.com/v2/project/" + project.Id
 	body, status := patch(url, overriddenValues, authHeader(auth))
@@ -129,4 +128,18 @@ func (project Project) Modify(modified Project, auth string) error {
 	}
 
 	return fmt.Errorf("unexpected response, status code %d", status)
+}
+
+func (project *Project) Validate() {
+	if project.Categories == nil {
+		project.Categories = []string{}
+	}
+
+	if project.InitialVersions == nil {
+		project.InitialVersions = []map[string]any{}
+	}
+
+	if project.Body == "" {
+		project.Body = " "
+	}
 }

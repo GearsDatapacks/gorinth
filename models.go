@@ -32,6 +32,7 @@ type Project struct {
 	Loaders []string `json:"loaders"`
 	Gallery []GalleryImage `json:"gallery"`
 	auth string
+	InitialVersions []map[string]any `json:"initial_versions"`
 }
 
 type Version struct {
@@ -52,4 +53,19 @@ type Version struct {
 	Downloads int `json:"downloads"`
 	Files []File `json:"files"`
 	FileParts []string `json:"file_parts"`
+}
+
+type User struct {
+	Username string `json:"username"`
+	Name string `json:"name"`
+	Email string `json:"email"`
+	Bio string `json:"bio"`
+	PayoutData PayoutData `json:"payout_data"`
+	Id string `json:"id"`
+	GithubId int `json:"github_id"`
+	AvatarUrl string `json:"avatar_url"`
+	Created string `json:"created"`
+	Role string `json:"role"`
+	Badges int8 `json:"badges"`
+	auth string
 }

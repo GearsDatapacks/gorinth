@@ -38,3 +38,10 @@ type File struct {
 	Size     int    `json:"size"`
 	FileType string `json:"file_type"`
 }
+
+type PayoutData struct {
+	Balance string `json:"balance"`
+	PayoutWallet string `json:"payout_wallet"`
+	PayoutWallerType string `json:"payout_wallet_type"`
+	PayoutAddress string `json:"payout_address"`
+}

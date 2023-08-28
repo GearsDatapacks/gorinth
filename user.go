@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 )
 
 func GetUserFromAuth(auth string) User {
@@ -26,7 +25,7 @@ func GetUserFromAuth(auth string) User {
 		return user
 	}
 
-	log.Fatalf("Unexpected response status %d", status)
+	logError("Unexpected response status %d", status)
 
 	return User{}
 }

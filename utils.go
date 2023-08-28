@@ -159,8 +159,23 @@ func removeNullValues[T Project](object T) map[string]any {
 			delete(values, key)
 			continue
 		}
+	}
 
-		if value == "" {
+	return values
+}
+
+func removeZeroValues[T Project](object T) map[string]any {
+	zeroStruct := T{}
+	values := toMap(object)
+	zeroMap := toMap(zeroStruct)
+
+	for key, value := range values {
+		if value == nil {
+			delete(values, key)
+			continue
+		}
+
+		if value == zeroMap[key] {
 			delete(values, key)
 			continue
 		}

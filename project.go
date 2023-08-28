@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -34,7 +33,7 @@ func (project Project) GetVersions() []Version {
 	result, statusCode := get(url, authHeader(project.auth))
 
 	if statusCode == 404 {
-		log.Fatalf("Project %q wasn't found or no authorization to see this project", project.Slug)
+		logError("Project %q wasn't found or no authorization to see this project", project.Slug)
 	}
 
 	response := []Version{}
@@ -48,7 +47,7 @@ func (project Project) GetLatestVersion() Version {
 	versions := project.GetVersions()
 
 	if len(versions) == 0 {
-		log.Fatalf("Project %q has no versions.", project.Title)
+		logError("Project %q has no versions.", project.Title)
 	}
 
 	return versions[0]
@@ -64,7 +63,7 @@ func (project Project) GetSpecificVersion(versionNumber string) Version {
 		}
 	}
 
-	log.Fatalf("Cannot find version %s of project %q", versionNumber, project.Title)
+	logError("Cannot find version %s of project %q", versionNumber, project.Title)
 	return Version{}
 }
 
@@ -105,7 +104,7 @@ func (project Project) CreateVersion(version Version, auth string) error {
 }
 
 func (project Project) Modify(modified Project, auth string) error {
-	overriddenValues := removeNullValues(modified)
+	overriddenValues := removeZeroValues(modified)
 
 	url := "https://api.modrinth.com/v2/project/" + project.Id
 	body, status := patch(url, overriddenValues, authHeader(auth))
@@ -151,7 +150,7 @@ func toTitle(slug string) string {
 			title += string(char)
 		}
 	}
-	
+
 	return title
 }
 

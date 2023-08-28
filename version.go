@@ -3,7 +3,6 @@ package gorinth
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 )
 
 func GetVersion(versionId string, auth string) Version {
@@ -11,7 +10,7 @@ func GetVersion(versionId string, auth string) Version {
 	result, statusCode := get(url, authHeader(auth))
 
 	if statusCode == 404 {
-		log.Fatalf("Version %q wasn't found or no authorization to see this project", versionId)
+		logError("Version %q wasn't found or no authorization to see this project", versionId)
 	}
 
 	version := Version{}

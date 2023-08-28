@@ -31,8 +31,8 @@ type Project struct {
 	GameVersions []string `json:"game_versions"`
 	Loaders []string `json:"loaders"`
 	Gallery []GalleryImage `json:"gallery"`
-	auth string
 	InitialVersions []map[string]any `json:"initial_versions"`
+	auth string
 }
 
 type Version struct {

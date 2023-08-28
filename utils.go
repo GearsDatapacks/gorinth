@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -18,7 +17,7 @@ func get(url string, headers map[string]string) (body []byte, status int) {
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	for key, value := range headers {
@@ -27,13 +26,13 @@ func get(url string, headers map[string]string) (body []byte, status int) {
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	return responseBody, response.StatusCode
@@ -42,13 +41,13 @@ func get(url string, headers map[string]string) (body []byte, status int) {
 func patch(url string, payload any, headers map[string]string) (body []byte, status int) {
 	requestSchema, err := json.Marshal(payload)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(requestSchema))
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -58,13 +57,13 @@ func patch(url string, payload any, headers map[string]string) (body []byte, sta
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	return responseBody, response.StatusCode
@@ -73,7 +72,7 @@ func patch(url string, payload any, headers map[string]string) (body []byte, sta
 func post(url string, payload any, headers map[string]string, parts map[string]io.Reader) (body []byte, status int) {
 	data, err := json.Marshal(payload)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	requestBody := &bytes.Buffer{}
@@ -81,7 +80,7 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 
 	w, err := writer.CreateFormField("data")
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	w.Write(data)
@@ -94,17 +93,17 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 		if x, ok := reader.(*os.File); ok {
 			fileWriter, err = writer.CreateFormFile(key, x.Name())
 			if err != nil {
-				log.Fatal(err)
+				logError(err.Error())
 			}
 		} else {
 			fileWriter, err = writer.CreateFormField(key)
 			if err != nil {
-				log.Fatal(err)
+				logError(err.Error())
 			}
 		}
 
 		if _, err = io.Copy(fileWriter, reader); err != nil {
-			log.Fatal(err)
+			logError(err.Error())
 		}
 	}
 
@@ -113,7 +112,7 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodPost, url, requestBody)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	request.Header.Set("Content-Type", writer.FormDataContentType())
@@ -123,13 +122,13 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 
 	response, err := client.Do(request)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	return responseBody, response.StatusCode
@@ -139,7 +138,7 @@ func toMap[T any](object T) map[string]any {
 	str, err := json.Marshal(object)
 
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 
 	result := map[string]any{}
@@ -147,7 +146,7 @@ func toMap[T any](object T) map[string]any {
 	err = json.Unmarshal(str, &result)
 
 	if err != nil {
-		log.Fatal(err)
+		logError(err.Error())
 	}
 	return result
 }

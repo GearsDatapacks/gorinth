@@ -11,7 +11,7 @@ func GetUserFromAuth(auth string) User {
 	body, status := get("https://api.modrinth.com/v2/user", authHeader(auth))
 
 	if status == 401 {
-		log.Fatal("Invalid authorisation token given")
+		logError("Invalid authorisation token given")
 	}
 
 	if status == 200 {
@@ -19,7 +19,7 @@ func GetUserFromAuth(auth string) User {
 
 		err := json.Unmarshal(body, &user)
 		if err != nil {
-			log.Fatal(err)
+			logError(err.Error())
 		}
 		user.auth = auth
 

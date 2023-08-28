@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 )
 
 // GetProject returns a Project Model of the project with a matching ID or slug with the one provided.
@@ -80,7 +82,7 @@ func (project Project) CreateVersion(version Version, auth string) error {
 	for _, file := range version.FileParts {
 		fileReader, err := os.Open(file)
 		if err != nil {
-			log.Fatal(err)
+			logError(err.Error())
 		}
 
 		files[file] = fileReader
@@ -130,16 +132,65 @@ func (project Project) Modify(modified Project, auth string) error {
 	return fmt.Errorf("unexpected response, status code %d", status)
 }
 
+func validSlug(slug string) bool {
+	match, err := regexp.Match("^[\\w!@$()`.+,\"\\-']{3,64}$", []byte(slug))
+
+	return match && err == nil
+}
+
+func toTitle(slug string) string {
+	spaced := strings.Replace(slug, "-", " ", -1)
+	title := ""
+
+	for i, char := range spaced {
+		if i == 0 {
+			title += strings.ToTitle(string(char))
+		} else if spaced[i-1] == ' ' {
+			title += strings.ToTitle(string(char))
+		} else {
+			title += string(char)
+		}
+	}
+	
+	return title
+}
+
 func (project *Project) Validate() {
+	if !validSlug(project.Slug) {
+		logError("Invalid project slug %q", project.Slug)
+	}
+
+	if len(project.Body) > 3 {
+		logError("Invalid project body with fewer than 3 characters")
+	}
+
+	if project.Title == "" {
+		title := toTitle(project.Slug)
+		logWarning("Invalid project title %q, automatically generated title %q", project.Title, title)
+		project.Title = title
+	}
+
+	if project.ClientSide != "required" && project.ClientSide != "optional" && project.ClientSide != "unsupported" {
+		project.ClientSide = "optional"
+	}
+
+	if project.ServerSide != "required" && project.ServerSide != "optional" && project.ServerSide != "unsupported" {
+		project.ServerSide = "optional"
+	}
+
+	if project.Status == "" {
+		project.Status = "unknown"
+	}
+
+	if project.ProjectType == "" {
+		project.ProjectType = "mod"
+	}
+
 	if project.Categories == nil {
 		project.Categories = []string{}
 	}
 
 	if project.InitialVersions == nil {
 		project.InitialVersions = []map[string]any{}
-	}
-
-	if project.Body == "" {
-		project.Body = " "
 	}
 }

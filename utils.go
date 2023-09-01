@@ -39,9 +39,15 @@ func get(url string, headers map[string]string) (body []byte, status int) {
 }
 
 func patch(url string, payload any, headers map[string]string) (body []byte, status int) {
-	requestSchema, err := json.Marshal(payload)
-	if err != nil {
-		logError(err.Error())
+	var requestSchema []byte
+	if bytes, ok := payload.([]byte); ok {
+		requestSchema = bytes
+	} else {
+		var err error
+		requestSchema, err = json.Marshal(payload)
+		if err != nil {
+			logError(err.Error())
+		}
 	}
 
 	client := &http.Client{}

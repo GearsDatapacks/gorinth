@@ -33,6 +33,7 @@ type Project struct {
 	Gallery []GalleryImage `json:"gallery"`
 	InitialVersions []map[string]any `json:"initial_versions"`
 	auth string
+	Icon []byte
 }
 
 type Version struct {

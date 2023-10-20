@@ -36,11 +36,12 @@ func (user User) CreateProject(project Project) error {
 	overriddenValues := removeNullValues(project)
 
 	overriddenValues["license_id"] = project.License.Id
+	overriddenValues["is_draft"] = true
 
 	parts := map[string]io.Reader{}
 
 	if project.Icon != nil {
-		parts = map[string]io.Reader{"icon": bytes.NewBuffer(project.Icon)}
+		parts["icon"] = bytes.NewBuffer(project.Icon)
 	}
 
 	body, status := post(

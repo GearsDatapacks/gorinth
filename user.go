@@ -3,15 +3,17 @@ package gorinth
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
-func GetUserFromAuth(auth string) User {
-	body, status := get("https://api.modrinth.com/v2/user", authHeader(auth))
+func GetUserFromAuth(auth string) (*User, error) {
+	body, status, err := get("https://api.modrinth.com/v2/user", authHeader(auth))
+	if err != nil {
+		return nil, err
+	}
 
 	if status == 401 {
-		logError("Invalid authorisation token given")
+		return nil, makeError("Invalid authorisation token given")
 	}
 
 	if status == 200 {
@@ -19,21 +21,22 @@ func GetUserFromAuth(auth string) User {
 
 		err := json.Unmarshal(body, &user)
 		if err != nil {
-			logError(err.Error())
+			return nil, makeError(err.Error())
 		}
 		user.auth = auth
 
-		return user
+		return &user, nil
 	}
 
-	logError("Unexpected response status %d", status)
-
-	return User{}
+	return nil, makeError("Unexpected response status %d", status)
 }
 
 func (user User) CreateProject(project Project) error {
 	project.Validate()
-	overriddenValues := removeNullValues(project)
+	overriddenValues, err := removeNullValues(project)
+	if err != nil {
+		return err
+	}
 
 	overriddenValues["license_id"] = project.License.Id
 	overriddenValues["is_draft"] = true
@@ -44,24 +47,27 @@ func (user User) CreateProject(project Project) error {
 		parts["icon"] = bytes.NewBuffer(project.Icon)
 	}
 
-	body, status := post(
+	body, status, err := post(
 		"https://api.modrinth.com/v2/project",
 		overriddenValues,
 		authHeader(user.auth),
 		parts,
 	)
+	if err != nil {
+		return err
+	}
 
 	if status == 200 {
 		return nil
 	}
 
 	if status == 400 {
-		return fmt.Errorf("invalid request when attempting to create project %q: %s", project.Title, string(body))
+		return makeError("invalid request when attempting to create project %q: %s", project.Title, string(body))
 	}
 
 	if status == 401 {
-		return fmt.Errorf("no authorisation to create project %q", project.Title)
+		return makeError("no authorisation to create project %q", project.Title)
 	}
 
-	return fmt.Errorf("unexpected status code %d", status)
+	return makeError("unexpected status code %d", status)
 }

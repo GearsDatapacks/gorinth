@@ -13,11 +13,11 @@ func authHeader(auth string) map[string]string {
 	return map[string]string{"Authorization": auth}
 }
 
-func get(url string, headers map[string]string) (body []byte, status int) {
+func get(url string, headers map[string]string) (body []byte, status int, err error) {
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	for key, value := range headers {
@@ -26,19 +26,19 @@ func get(url string, headers map[string]string) (body []byte, status int) {
 
 	response, err := client.Do(request)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
-	return responseBody, response.StatusCode
+	return responseBody, response.StatusCode, nil
 }
 
-func patch(url string, payload any, headers map[string]string) (body []byte, status int) {
+func patch(url string, payload any, headers map[string]string) (body []byte, status int, err error) {
 	var requestSchema []byte
 	if bytes, ok := payload.([]byte); ok {
 		requestSchema = bytes
@@ -46,14 +46,14 @@ func patch(url string, payload any, headers map[string]string) (body []byte, sta
 		var err error
 		requestSchema, err = json.Marshal(payload)
 		if err != nil {
-			logError(err.Error())
+			return nil, 0, err
 		}
 	}
 
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(requestSchema))
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	request.Header.Set("Content-Type", "application/json")
@@ -63,22 +63,22 @@ func patch(url string, payload any, headers map[string]string) (body []byte, sta
 
 	response, err := client.Do(request)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
-	return responseBody, response.StatusCode
+	return responseBody, response.StatusCode, nil
 }
 
-func post(url string, payload any, headers map[string]string, parts map[string]io.Reader) (body []byte, status int) {
+func post(url string, payload any, headers map[string]string, parts map[string]io.Reader) (body []byte, status int, err error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	requestBody := &bytes.Buffer{}
@@ -86,7 +86,7 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 
 	w, err := writer.CreateFormField("data")
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	w.Write(data)
@@ -99,17 +99,17 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 		if x, ok := reader.(*os.File); ok {
 			fileWriter, err = writer.CreateFormFile(key, x.Name())
 			if err != nil {
-				logError(err.Error())
+				return nil, 0, err
 			}
 		} else {
 			fileWriter, err = writer.CreateFormField(key)
 			if err != nil {
-				logError(err.Error())
+				return nil, 0, err
 			}
 		}
 
 		if _, err = io.Copy(fileWriter, reader); err != nil {
-			logError(err.Error())
+			return nil, 0, err
 		}
 	}
 
@@ -118,7 +118,7 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 	client := &http.Client{}
 	request, err := http.NewRequest(http.MethodPost, url, requestBody)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	request.Header.Set("Content-Type", writer.FormDataContentType())
@@ -128,23 +128,23 @@ func post(url string, payload any, headers map[string]string, parts map[string]i
 
 	response, err := client.Do(request)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
 	defer response.Body.Close()
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
-		logError(err.Error())
+		return nil, 0, err
 	}
 
-	return responseBody, response.StatusCode
+	return responseBody, response.StatusCode, nil
 }
 
-func toMap[T any](object T) map[string]any {
+func toMap[T any](object T) (map[string]any, error) {
 	str, err := json.Marshal(object)
 
 	if err != nil {
-		logError(err.Error())
+		return nil, err
 	}
 
 	result := map[string]any{}
@@ -152,13 +152,16 @@ func toMap[T any](object T) map[string]any {
 	err = json.Unmarshal(str, &result)
 
 	if err != nil {
-		logError(err.Error())
+		return nil, err
 	}
-	return result
+	return result, nil
 }
 
-func removeNullValues[T Project](object T) map[string]any {
-	values := toMap(object)
+func removeNullValues[T Project](object T) (map[string]any, error) {
+	values, err := toMap(object)
+	if err != nil {
+		return nil, err
+	}
 
 	for key, value := range values {
 		if value == nil {
@@ -167,13 +170,19 @@ func removeNullValues[T Project](object T) map[string]any {
 		}
 	}
 
-	return values
+	return values, nil
 }
 
-func removeZeroValues[T Project](object T) map[string]any {
+func removeZeroValues[T Project](object T) (map[string]any, error) {
 	zeroStruct := T{}
-	values := toMap(object)
-	zeroMap := toMap(zeroStruct)
+	values, err := toMap(object)
+	if err != nil {
+		return nil, err
+	}
+	zeroMap, err := toMap(zeroStruct)
+	if err != nil {
+		return nil, err
+	}
 
 	for key, value := range values {
 		if value == nil {
@@ -191,7 +200,7 @@ func removeZeroValues[T Project](object T) map[string]any {
 		}
 	}
 
-	return values
+	return values, nil
 }
 
 // func Upload(client *http.Client, url string, values map[string]io.Reader) (err error) {
@@ -239,7 +248,7 @@ func removeZeroValues[T Project](object T) map[string]any {
 
 // 	// Check the response
 // 	if res.StatusCode != http.StatusOK {
-// 			err = fmt.Errorf("bad status: %s", res.Status)
+// 			err = makeError("bad status: %s", res.Status)
 // 	}
 // 	return
 // }

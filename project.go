@@ -10,12 +10,15 @@ import (
 )
 
 // GetProject returns a Project Model of the project with a matching ID or slug with the one provided.
-func GetProject(id_or_slug string, auth string) (Project, error) {
+func GetProject(id_or_slug string, auth string) (*Project, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", id_or_slug)
-	result, statusCode := get(url, authHeader(auth))
+	result, statusCode, err := get(url, authHeader(auth))
+	if err != nil {
+		return nil, err
+	}
 
 	if statusCode == 404 {
-		return Project{}, fmt.Errorf("Project %q wasn't found or no authorization to see this project", id_or_slug)
+		return nil, makeError("Project %q wasn't found or no authorization to see this project", id_or_slug)
 	}
 
 	project := Project{}
@@ -24,47 +27,55 @@ func GetProject(id_or_slug string, auth string) (Project, error) {
 
 	project.auth = auth
 
-	return project, nil
+	return &project, nil
 }
 
 // Gets all versions of a project
-func (project Project) GetVersions() []Version {
+func (project Project) GetVersions() ([]Version, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version", project.Slug)
-	result, statusCode := get(url, authHeader(project.auth))
+	result, statusCode, err := get(url, authHeader(project.auth))
+	if err != nil {
+		return nil, err
+	}
 
 	if statusCode == 404 {
-		logError("Project %q wasn't found or no authorization to see this project", project.Slug)
+		return nil, makeError("Project %q wasn't found or no authorization to see this project", project.Slug)
 	}
 
 	response := []Version{}
 	json.Unmarshal(result, &response)
 
-	return response
+	return response, nil
 }
 
 // Gets the most recently created version of a project
-func (project Project) GetLatestVersion() Version {
-	versions := project.GetVersions()
-
-	if len(versions) == 0 {
-		logError("Project %q has no versions.", project.Title)
+func (project Project) GetLatestVersion() (*Version, error) {
+	versions, err := project.GetVersions()
+	if err != nil {
+		return nil, err
 	}
 
-	return versions[0]
+	if len(versions) == 0 {
+		return nil, makeError("Project %q has no versions", project.Title)
+	}
+
+	return &versions[0], nil
 }
 
 // Get the version of the given project whose semver string matches the given string
-func (project Project) GetSpecificVersion(versionNumber string) Version {
-	versions := project.GetVersions()
+func (project Project) GetSpecificVersion(versionNumber string) (*Version, error) {
+	versions, err := project.GetVersions()
+	if err != nil {
+		return nil, err
+	}
 
 	for _, version := range versions {
 		if version.VersionNumber == versionNumber {
-			return version
+			return &version, nil
 		}
 	}
 
-	logError("Cannot find version %s of project %q", versionNumber, project.Title)
-	return Version{}
+	return nil, makeError("Cannot find version %s of project %q", versionNumber, project.Title)
 }
 
 func (project Project) CreateVersion(version Version, auth string) error {
@@ -81,48 +92,61 @@ func (project Project) CreateVersion(version Version, auth string) error {
 	for _, file := range version.FileParts {
 		fileReader, err := os.Open(file)
 		if err != nil {
-			logError(err.Error())
+			return err
 		}
 
 		files[file] = fileReader
 	}
 
-	body, status := post("https://api.modrinth.com/v2/version", version, authHeader(auth), files)
+	body, status, err := post("https://api.modrinth.com/v2/version", version, authHeader(auth), files)
+	if err != nil {
+		return err
+	}
+
 	if status == 200 {
 		return nil
 	}
 
 	if status == 400 {
-		return fmt.Errorf("invalid request when attempting to create version %q: %s", version.Name, string(body))
+		return makeError("invalid request when attempting to create version %q: %s", version.Name, string(body))
 	}
 
 	if status == 401 {
-		return fmt.Errorf("no authorisation to create version %q", version.Name)
+		return makeError("no authorisation to create version %q", version.Name)
 	}
 
-	return fmt.Errorf("unexpected status code %d", status)
+	return makeError("unexpected status code %d", status)
 }
 
 func (project Project) ChangeIcon(icon []byte, auth string) error {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/icon?ext=%s", project.Id, "png")
-	body, status := patch(url, icon, authHeader(auth))
+	body, status, err := patch(url, icon, authHeader(auth))
+	if err != nil {
+		return err
+	}
 
 	if status == 204 {
 		return nil
 	}
 
 	if status == 400 {
-		return fmt.Errorf("invalid request when attempting to modify project icon: %s", string(body))
+		return makeError("invalid request when attempting to modify project icon: %s", string(body))
 	}
 
-	return fmt.Errorf("unexpected response, status code %d, error %s", status, string(body))
+	return makeError("unexpected response, status code %d, error %s", status, string(body))
 }
 
 func (project Project) Modify(modified Project, auth string) error {
-	overriddenValues := removeZeroValues(modified)
+	overriddenValues, err := removeZeroValues(modified)
+	if err != nil {
+		return err
+	}
 
 	url := "https://api.modrinth.com/v2/project/" + project.Id
-	body, status := patch(url, overriddenValues, authHeader(auth))
+	body, status, err := patch(url, overriddenValues, authHeader(auth))
+	if err != nil {
+		return err
+	}
 
 	if status == 204 {
 		if modified.Icon == nil {
@@ -133,7 +157,7 @@ func (project Project) Modify(modified Project, auth string) error {
 	}
 
 	if status == 404 {
-		return fmt.Errorf("Project %q wasn't found or no authorization to see this project", project.Slug)
+		return makeError("Project %q wasn't found or no authorization to see this project", project.Slug)
 	}
 
 	if status == 401 {
@@ -144,14 +168,14 @@ func (project Project) Modify(modified Project, auth string) error {
 
 		json.Unmarshal(body, &responseSchema)
 
-		return fmt.Errorf("%s: %s", responseSchema.Error, responseSchema.Description)
+		return makeError("%s: %s", responseSchema.Error, responseSchema.Description)
 	}
 
 	if status == 400 {
-		return fmt.Errorf("invalid request when attempting to modify project icon: %s", string(body))
+		return makeError("invalid request when attempting to modify project icon: %s", string(body))
 	}
 
-	return fmt.Errorf("unexpected response, status code %d, error %s", status, string(body))
+	return makeError("unexpected response, status code %d, error %s", status, string(body))
 }
 
 func validSlug(slug string) bool {
@@ -177,13 +201,13 @@ func toTitle(slug string) string {
 	return title
 }
 
-func (project *Project) Validate() {
+func (project *Project) Validate() error {
 	if !validSlug(project.Slug) {
-		logError("Invalid project slug %q", project.Slug)
+		return makeError("Invalid project slug %q", project.Slug)
 	}
 
 	if len(project.Body) > 3 {
-		logError("Invalid project body with fewer than 3 characters")
+		return makeError("Invalid project body with fewer than 3 characters")
 	}
 
 	if project.Title == "" {
@@ -215,4 +239,6 @@ func (project *Project) Validate() {
 	if project.InitialVersions == nil {
 		project.InitialVersions = []map[string]any{}
 	}
+
+	return nil
 }

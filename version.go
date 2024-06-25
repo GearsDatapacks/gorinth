@@ -5,17 +5,20 @@ import (
 	"fmt"
 )
 
-func GetVersion(versionId string, auth string) Version {
+func GetVersion(versionId string, auth string) (*Version, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/version/%s", versionId)
-	result, statusCode := get(url, authHeader(auth))
+	result, statusCode, err := get(url, authHeader(auth))
+	if err != nil {
+		return nil, err
+	}
 
 	if statusCode == 404 {
-		logError("Version %q wasn't found or no authorization to see this project", versionId)
+		return nil, makeError("Version %q wasn't found or no authorization to see this project", versionId)
 	}
 
 	version := Version{}
 
 	json.Unmarshal(result, &version)
 
-	return version
+	return &version, nil
 }

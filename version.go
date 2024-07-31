@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Gets the version associated with the given ID
 func GetVersion(versionId string, auth string) (*Version, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/version/%s", versionId)
 	result, statusCode, err := get(url, authHeader(auth))

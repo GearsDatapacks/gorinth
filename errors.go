@@ -8,20 +8,15 @@ func format(log string, logType string, values ...any) string {
 	return "[Gorinth] " + logType + " - " + fmt.Sprintf(log, values...)
 }
 
-type Error string
+type gorinthError string
 
-func (err Error) Error() string {
+func (err gorinthError) Error() string {
 	return format(string(err), "Error")
 }
 
-func makeError(message string, values ...any) Error {
-	return Error(fmt.Sprintf(message, values...))
+func makeError(message string, values ...any) gorinthError {
+	return gorinthError(fmt.Sprintf(message, values...))
 }
-
-// func logError(err string, values ...any) {
-// 	fmt.Println(format(err, "Error", values))
-// 	os.Exit(1)
-// }
 
 func logWarning(warn string, values ...any) {
 	fmt.Println(format(warn, "Warning", values...))

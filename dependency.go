@@ -1,8 +1,9 @@
 package gorinth
 
-func (dep Dependency) GetVersion() (*Version, error) {
-	if dep.VersionId == "" {
-		project, err := GetProject(dep.ProjectId, "")
+// Gets the version associated with a dependency
+func (dep *Dependency) GetVersion() (*Version, error) {
+	if dep.VersionId == nil {
+		project, err := GetProject(*dep.ProjectId, "")
 
 		if err != nil {
 			return nil, err
@@ -11,5 +12,5 @@ func (dep Dependency) GetVersion() (*Version, error) {
 		return project.GetLatestVersion()
 	}
 
-	return GetVersion(dep.VersionId, "")
+	return GetVersion(*dep.VersionId, "")
 }

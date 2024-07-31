@@ -6,6 +6,7 @@ import (
 	"io"
 )
 
+// Returns the user associated with an auth token
 func GetUserFromAuth(auth string) (*User, error) {
 	body, status, err := get("https://api.modrinth.com/v2/user", authHeader(auth))
 	if err != nil {
@@ -31,7 +32,8 @@ func GetUserFromAuth(auth string) (*User, error) {
 	return nil, makeError("Unexpected response status %d", status)
 }
 
-func (user User) CreateProject(project Project) error {
+// Creates a project on the user's profile
+func (user *User) CreateProject(project Project) error {
 	project.Validate()
 	overriddenValues, err := removeNullValues(project)
 	if err != nil {

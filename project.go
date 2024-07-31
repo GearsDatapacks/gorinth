@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// GetProject returns a Project Model of the project with a matching ID or slug with the one provided.
+// Returns a Project Model of the project with a matching ID or slug with the one provided.
 func GetProject(id_or_slug string, auth string) (*Project, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", id_or_slug)
 	result, statusCode, err := get(url, authHeader(auth))
@@ -30,8 +30,8 @@ func GetProject(id_or_slug string, auth string) (*Project, error) {
 	return &project, nil
 }
 
-// Gets all versions of a project
-func (project Project) GetVersions() ([]Version, error) {
+// Returns all versions of the project
+func (project *Project) GetVersions() ([]Version, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/version", project.Slug)
 	result, statusCode, err := get(url, authHeader(project.auth))
 	if err != nil {
@@ -48,8 +48,8 @@ func (project Project) GetVersions() ([]Version, error) {
 	return response, nil
 }
 
-// Gets the most recently created version of a project
-func (project Project) GetLatestVersion() (*Version, error) {
+// Returns the most recently created version of the project
+func (project *Project) GetLatestVersion() (*Version, error) {
 	versions, err := project.GetVersions()
 	if err != nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (project Project) GetLatestVersion() (*Version, error) {
 	return &versions[0], nil
 }
 
-// Get the version of the given project whose semver string matches the given string
-func (project Project) GetSpecificVersion(versionNumber string) (*Version, error) {
+// Returns the version of the project whose semver string matches the given string
+func (project *Project) GetSpecificVersion(versionNumber string) (*Version, error) {
 	versions, err := project.GetVersions()
 	if err != nil {
 		return nil, err
@@ -78,7 +78,8 @@ func (project Project) GetSpecificVersion(versionNumber string) (*Version, error
 	return nil, makeError("Cannot find version %s of project %q", versionNumber, project.Title)
 }
 
-func (project Project) CreateVersion(version Version, auth string) error {
+// Creates a version associated with the project
+func (project *Project) CreateVersion(version Version, auth string) error {
 	if version.Status == "" {
 		version.Status = "listed"
 	}
@@ -118,7 +119,8 @@ func (project Project) CreateVersion(version Version, auth string) error {
 	return makeError("unexpected status code %d", status)
 }
 
-func (project Project) ChangeIcon(icon []byte, auth string) error {
+// Changes the icon of the project
+func (project *Project) ChangeIcon(icon []byte, auth string) error {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s/icon?ext=%s", project.Id, "png")
 	body, status, err := patch(url, icon, authHeader(auth))
 	if err != nil {
@@ -136,7 +138,8 @@ func (project Project) ChangeIcon(icon []byte, auth string) error {
 	return makeError("unexpected response, status code %d, error %s", status, string(body))
 }
 
-func (project Project) Modify(modified Project, auth string) error {
+// Modifies the project on Modrinth, updating all non-zero fields
+func (project *Project) Modify(modified Project, auth string) error {
 	overriddenValues, err := removeZeroValues(modified)
 	if err != nil {
 		return err
@@ -201,6 +204,8 @@ func toTitle(slug string) string {
 	return title
 }
 
+// Validates a project, fixing any straightforward problems,
+// and returning an error for any problems which can't be resolved
 func (project *Project) Validate() error {
 	if !validSlug(project.Slug) {
 		return makeError("Invalid project slug %q", project.Slug)
@@ -234,10 +239,6 @@ func (project *Project) Validate() error {
 
 	if project.Categories == nil {
 		project.Categories = []string{}
-	}
-
-	if project.InitialVersions == nil {
-		project.InitialVersions = []map[string]any{}
 	}
 
 	return nil

@@ -53,6 +53,15 @@ const (
 	ProjectShader ProjectType = "shader"
 )
 
+// The monetisation status of a project
+type MonetizationStatus string
+
+const (
+	MonetizationMonetized MonetizationStatus = "monetized"
+	MonetizationDemonetized MonetizationStatus = "demonetized"
+	MonetizationForceDemonetized MonetizationStatus = "force-demonetized"
+)
+
 // The type of a dependency. One of: "required"`, "optional", "incompatible", "embedded"
 type DependencyType string
 

@@ -40,11 +40,15 @@ type Project struct {
 	IconUrl *string `json:"icon_url"`
 	// The RGB colour of the project, automatically generated from the project icon
 	Color *int `json:"color"`
+	// The ID of the moderation thread of this project
+	ThreadId *string `json:"thread_id"`
+	// The monetization status of the project
+	MonetizationStatus *MonetizationStatus `json:"monetization_status"`
 	// The ID of the project, encoded as a base62 string
 	Id string `json:"id"`
 	// The ID of the team that has ownership of this project
 	Team string `json:"team"`
-	// The date the project was publised (ISO-8601 format)
+	// The date the project was published (ISO-8601 format)
 	Published string `json:"published"`
 	// The date the project was last updated (ISO-8601 format)
 	Updated string `json:"updated"`
@@ -70,6 +74,56 @@ type Project struct {
 	auth string
 }
 
+// Represents one search result when searching. Pointer fields are optional
+type SearchResult struct {
+	// The slug of the project, used for vanity URLs
+	Slug string `json:"slug"`
+	// The title or name of the project
+	Title string `json:"title"`
+	// A short description of the project
+	Description string `json:"description"`
+	// A list of categories that the project is listed under
+	Categories []string `json:"categories"`
+	// The client side support of the project
+	ClientSide Support `json:"client_side"`
+	// The server side support of the project
+	ServerSide Support `json:"server_side"`
+	// The type of the project
+	ProjectType ProjectType `json:"project_type"`
+	// The total number of downloads of the project
+	Downloads int `json:"downloads"`
+	// The URL of the project's icon
+	IconUrl *string `json:"icon_url"`
+	// The RGB colour of the project, automatically generated from the project icon
+	Color *int `json:"color"`
+	// The ID of the moderation thread of this project
+	ThreadId *string `json:"thread_id"`
+	// The monetization status of the project
+	MonetizationStatus *MonetizationStatus `json:"monetization_status"`
+	// A list of all of the game versions supported by the project
+	Versions []string `json:"versions"`
+	// The ID of the project
+	ProjectId string `json:"project_id"`
+	// The username of the project's author
+	Author string `json:"author"`
+	// A list of the categories that are prioritised
+	DisplayCategories []string `json:"display_categories"`
+	// The number of follows the project has
+	Follows int `json:"follows"`
+	// The data that the project was created (ISO-8601 format)
+	DateCreated string `json:"date_created"`
+	// The data that the project was last modified (ISO-8601 format)
+	DateModified string `json:"date_modified"`
+	// The latest Minecraft version supported by this project
+	LatestVersion *string `json:"latest_version"`
+	// The SPDX license ID of the project
+	License string `json:"license"`
+	// The URLs of gallery images of this project
+	Gallery []string `json:"gallery"`
+	// The featured gallery image of this project
+	FeaturedGallery *string `json:"featured_gallery"`
+}
+
 // Represents one version of a project. Pointer fields are optional
 type Version struct {
 	// The name of this version
@@ -82,7 +136,7 @@ type Version struct {
 	Dependencies []Dependency `json:"dependencies"`
 	// A list of versions of Minecraft that this version supports
 	GameVersions []string `json:"game_versions"`
-	// The release type foor this version
+	// The release type for this version
 	VersionType ReleaseType `json:"version_type"`
 	// The mod loaders that this version supports
 	Loaders []string `json:"loaders"`

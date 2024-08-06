@@ -9,6 +9,30 @@ import (
 	"strings"
 )
 
+// Searches Modrinth for projects matching a query
+func SearchProjects(query SearchQuery) (*SearchResponse, error) {
+	url := fmt.Sprintf("https://api.modrinth.com/v2/search?%s", query.toQueryString())
+	body, statusCode, err := get(url, map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+
+	if statusCode == 400 {
+		return nil, makeError("Invalid request when attempting to search projects: %s", string(body))
+	}
+
+	if statusCode != 200 {
+		return nil, makeError("Unexpected status code when searching projects: %d", statusCode)
+	}
+
+	response := &SearchResponse{}
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return nil, err
+	}
+	return response, nil
+}
+
 // Returns a Project Model of the project with a matching ID or slug with the one provided.
 func GetProject(id_or_slug string, auth string) (*Project, error) {
 	url := fmt.Sprintf("https://api.modrinth.com/v2/project/%s", id_or_slug)
@@ -23,7 +47,10 @@ func GetProject(id_or_slug string, auth string) (*Project, error) {
 
 	project := Project{}
 
-	json.Unmarshal(result, &project)
+	err = json.Unmarshal(result, &project)
+	if err != nil {
+		return nil, err
+	}
 
 	project.auth = auth
 
@@ -43,7 +70,10 @@ func (project *Project) GetVersions() ([]Version, error) {
 	}
 
 	response := []Version{}
-	json.Unmarshal(result, &response)
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		return nil, err
+	}
 
 	return response, nil
 }
@@ -109,14 +139,14 @@ func (project *Project) CreateVersion(version Version, auth string) error {
 	}
 
 	if status == 400 {
-		return makeError("invalid request when attempting to create version %q: %s", version.Name, string(body))
+		return makeError("Invalid request when attempting to create version %q: %s", version.Name, string(body))
 	}
 
 	if status == 401 {
-		return makeError("no authorisation to create version %q", version.Name)
+		return makeError("No authorisation to create version %q", version.Name)
 	}
 
-	return makeError("unexpected status code %d", status)
+	return makeError("Unexpected status code %d", status)
 }
 
 // Changes the icon of the project
@@ -132,10 +162,10 @@ func (project *Project) ChangeIcon(icon []byte, auth string) error {
 	}
 
 	if status == 400 {
-		return makeError("invalid request when attempting to modify project icon: %s", string(body))
+		return makeError("Invalid request when attempting to modify project icon: %s", string(body))
 	}
 
-	return makeError("unexpected response, status code %d, error %s", status, string(body))
+	return makeError("Unexpected response, status code %d, error %s", status, string(body))
 }
 
 // Modifies the project on Modrinth, updating all non-zero fields
@@ -175,10 +205,10 @@ func (project *Project) Modify(modified Project, auth string) error {
 	}
 
 	if status == 400 {
-		return makeError("invalid request when attempting to modify project icon: %s", string(body))
+		return makeError("Invalid request when attempting to modify project icon: %s", string(body))
 	}
 
-	return makeError("unexpected response, status code %d, error %s", status, string(body))
+	return makeError("Unexpected response, status code %d, error %s", status, string(body))
 }
 
 func validSlug(slug string) bool {
